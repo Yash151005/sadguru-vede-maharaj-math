@@ -40,6 +40,8 @@ MATH_PLACE = "परंडा, महाराष्ट्र"
 CONTACT_NAME = "यश स्वामी (पकाले)"
 CONTACT_EMAIL = "yashpakale56@gmail.com"
 CONTACT_PHONE = "8208027577"
+MAHARAJ_NAME = "श्री. ष. ब्र. १०८ राचलिंग शिवाचार्य परंडकर महाराज"
+MAHARAJ_PHONES = ("9405428974", "9309170918")
 
 PAGES = [
     "🏠 मुख्यपृष्ठ",
@@ -128,6 +130,21 @@ html, body, [class*="css"] {
 .contact-title { color: #000 !important; }
 .contact-content,
 .contact-content * { color: #000 !important; }
+.contact-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.contact-row .card { margin: .7rem 0; }
+.contact-row .contact-line { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+    .contact-row { grid-template-columns: 1fr; }
+}
+.admin-title { color: #000 !important; }
+.gallery-title,
+.events-title,
+.events-subtitle { color: #000 !important; }
+.black-message { color: #000; }
 .quote {
     background: linear-gradient(90deg, #FFF3CD, #FFE0B2);
     border-radius: 16px;
@@ -254,7 +271,7 @@ def render_home(data: dict) -> None:
     )
 
     upcoming, _ = split_events(data["events"])
-    st.markdown('<h2 class="section-title">📅 पुढील कार्यक्रम</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title events-title">📅 पुढील कार्यक्रम</h2>', unsafe_allow_html=True)
     if upcoming:
         nxt = upcoming[0]
         d = parse_event_date(nxt)
@@ -271,9 +288,13 @@ def render_home(data: dict) -> None:
             unsafe_allow_html=True,
         )
     else:
-        st.info("सध्या कोणताही नियोजित कार्यक्रम नाही. लवकरच माहिती दिली जाईल.")
+        st.markdown(
+            '<div class="black-message">सध्या कोणताही नियोजित कार्यक्रम नाही. '
+            'लवकरच माहिती दिली जाईल.</div>',
+            unsafe_allow_html=True,
+        )
 
-    st.markdown('<h2 class="section-title">🖼️ ताजी छायाचित्रे</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title gallery-title">🖼️ ताजी छायाचित्रे</h2>', unsafe_allow_html=True)
     recent = list(reversed(data["images"]))[:3]
     if recent:
         cols = st.columns(3)
@@ -283,7 +304,8 @@ def render_home(data: dict) -> None:
                     st.image(str(image_path(img)), caption=img.get("caption") or None,
                              use_container_width=True)
     else:
-        st.caption("अद्याप छायाचित्रे उपलब्ध नाहीत.")
+        st.markdown('<div class="black-message">अद्याप छायाचित्रे उपलब्ध नाहीत.</div>',
+                    unsafe_allow_html=True)
 
     st.markdown(
         '<div class="quote">॥ ॐ नमः शिवाय ॥<br>'
@@ -353,10 +375,10 @@ def render_about() -> None:
 
 
 def render_gallery(data: dict) -> None:
-    st.markdown('<h2 class="section-title">🖼️ छायाचित्र दालन</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title gallery-title">🖼️ छायाचित्र दालन</h2>', unsafe_allow_html=True)
     images = list(reversed(data["images"]))
     if not images:
-        st.info("अद्याप छायाचित्रे जोडलेली नाहीत.")
+        st.markdown('<div class="black-message">अद्याप छायाचित्रे जोडलेली नाहीत.</div>', unsafe_allow_html=True)
         return
     cols = st.columns(3)
     shown = 0
@@ -370,12 +392,12 @@ def render_gallery(data: dict) -> None:
 
 
 def render_events(data: dict) -> None:
-    st.markdown('<h2 class="section-title">📅 कार्यक्रम वेळापत्रक</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title events-title">📅 कार्यक्रम वेळापत्रक</h2>', unsafe_allow_html=True)
     upcoming, past = split_events(data["events"])
 
-    st.markdown("#### 🔜 आगामी कार्यक्रम")
+    st.markdown('<h4 class="events-subtitle">🔜 आगामी कार्यक्रम</h4>', unsafe_allow_html=True)
     if not upcoming:
-        st.info("सध्या कोणताही आगामी कार्यक्रम नाही.")
+        st.markdown('<div class="black-message">सध्या कोणताही आगामी कार्यक्रम नाही.</div>', unsafe_allow_html=True)
     for i, e in enumerate(upcoming):
         d = parse_event_date(e)
         badge = '<span class="badge">पुढील</span>' if i == 0 else ""
@@ -408,11 +430,21 @@ def render_contact() -> None:
     st.markdown(
         f"""
         <div class="contact-content">
+        <div class="contact-row">
+        <div class="card">
+            <h3>🙏 {html.escape(MAHARAJ_NAME)}</h3>
+            <div class="contact-line">📱 मोबाईल:
+                <a href="tel:+91{MAHARAJ_PHONES[0]}">{mr_digits(MAHARAJ_PHONES[0])} ({MAHARAJ_PHONES[0]})</a>
+                /
+                <a href="tel:+91{MAHARAJ_PHONES[1]}">{mr_digits(MAHARAJ_PHONES[1])} ({MAHARAJ_PHONES[1]})</a>
+            </div>
+        </div>
         <div class="card">
             <h3>🙏 {html.escape(CONTACT_NAME)}</h3>
             <div class="contact-line">📱 मोबाईल: <a href="tel:+91{CONTACT_PHONE}">{mr_digits(CONTACT_PHONE)} ({CONTACT_PHONE})</a></div>
             <div class="contact-line">✉️ ईमेल: <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a></div>
             <div class="contact-line">📍 पत्ता: {html.escape(MATH_NAME)}, {MATH_PLACE}</div>
+        </div>
         </div>
         <div class="quote">भक्तांचे स्वागत आहे — दर्शन, माहिती किंवा मार्गदर्शनासाठी संपर्क साधा.</div>
         </div>
@@ -422,7 +454,7 @@ def render_contact() -> None:
 
 
 def render_admin(data: dict) -> None:
-    st.markdown('<h2 class="section-title">🔐 प्रशासक विभाग</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title admin-title">🔐 प्रशासक विभाग</h2>', unsafe_allow_html=True)
 
     if not st.session_state.get("is_admin"):
         if not ADMIN_PASSWORD:
