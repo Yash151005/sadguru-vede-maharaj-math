@@ -607,12 +607,12 @@ def render_admin(data: dict) -> None:
 
     # --- कार्यक्रम जोडा ---
     with tab_add_event:
+        has_end = st.checkbox("समाप्ती तारीख आणि वेळ (ऐच्छिक)", key="event_has_end")
         with st.form("event_form", clear_on_submit=True):
             title = st.text_input("कार्यक्रमाचे नाव *")
             c1, c2 = st.columns(2)
             ev_date = c1.date_input("तारीख", value=now_ist().date())
             ev_time = c2.time_input("वेळ", value=time(8, 0))
-            has_end = st.checkbox("समाप्ती तारीख आणि वेळ (ऐच्छिक)")
             end_date = None
             end_time = None
             if has_end:
