@@ -169,6 +169,29 @@ section[data-testid="stSidebar"] {
 }
 section[data-testid="stSidebar"] * { color: #FFF8E1; }
 section[data-testid="stSidebar"] h2 { color: #FFEB3B !important; }
+.top-navbar {
+    background: linear-gradient(120deg, #800000 0%, #B71C1C 50%, #E65100 100%);
+    border-radius: 16px;
+    padding: .7rem .8rem .35rem;
+    margin-bottom: 1.2rem;
+}
+.top-navbar-title {
+    color: #FFEB3B;
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: .35rem;
+}
+.top-navbar [data-testid="stHorizontalBlock"] {
+    gap: .35rem;
+}
+.top-navbar .stButton > button {
+    width: 100%;
+    min-height: 2.8rem;
+    padding: .35rem .25rem;
+    font-size: .88rem;
+    box-shadow: none;
+}
 .stButton > button {
     background: linear-gradient(90deg, #FF9933, #E53935);
     color: #fff;
@@ -580,12 +603,21 @@ def main() -> None:
     if "is_admin" not in st.session_state:
         st.session_state.is_admin = False
 
-    with st.sidebar:
-        st.markdown("## 🕉️ मठ मार्गदर्शक")
-        st.markdown(f"**{MATH_NAME}**")
-        page = st.radio("पृष्ठे", PAGES, label_visibility="collapsed")
-        st.markdown("---")
-        st.caption("॥ ॐ नमः शिवाय ॥")
+    if "page" not in st.session_state:
+        st.session_state.page = PAGES[0]
+
+    st.markdown(
+        '<div class="top-navbar"><div class="top-navbar-title">'
+        f'🕉️ {html.escape(MATH_NAME)}</div></div>',
+        unsafe_allow_html=True,
+    )
+    nav_columns = st.columns(len(PAGES))
+    for index, page_name in enumerate(PAGES):
+        with nav_columns[index]:
+            if st.button(page_name, key=f"nav_{index}", use_container_width=True):
+                st.session_state.page = page_name
+                st.rerun()
+    page = st.session_state.page
 
     data = load_data()
 
