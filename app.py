@@ -303,6 +303,11 @@ def image_path(img: dict) -> Path:
     return UPLOAD_DIR / img["file"]
 
 
+def event_image_path(event: dict) -> Path | None:
+    filename = event.get("image")
+    return UPLOAD_DIR / filename if filename else None
+
+
 # ------------------------------------------------------------------
 # पृष्ठे
 # ------------------------------------------------------------------
@@ -324,6 +329,9 @@ def render_home(data: dict) -> None:
     if upcoming:
         nxt = upcoming[0]
         d = parse_event_date(nxt)
+        event_image = event_image_path(nxt)
+        if event_image and event_image.exists():
+            st.image(str(event_image), caption=nxt.get("title") or None, use_container_width=True)
         st.markdown(
             f"""
             <div class="card card-gold">
@@ -450,6 +458,9 @@ def render_events(data: dict) -> None:
     for i, e in enumerate(upcoming):
         d = parse_event_date(e)
         badge = '<span class="badge">पुढील</span>' if i == 0 else ""
+        event_image = event_image_path(e)
+        if event_image and event_image.exists():
+            st.image(str(event_image), caption=e.get("title") or None, use_container_width=True)
         st.markdown(
             f"""
             <div class="card {'card-gold' if i == 0 else ''}">
@@ -588,19 +599,30 @@ def render_admin(data: dict) -> None:
             ev_time = c2.time_input("वेळ", value=time(8, 0))
             place = st.text_input("ठिकाण", value=MATH_PLACE)
             desc = st.text_area("माहिती / विशेष सूचना")
+            event_image = st.file_uploader(
+                "कार्यक्रमाचे छायाचित्र (ऐच्छिक)",
+                type=["jpg", "jpeg", "png", "webp"],
+                accept_multiple_files=False,
+            )
             sub = st.form_submit_button("कार्यक्रम जोडा")
         if sub:
             if not title.strip():
                 st.warning("कार्यक्रमाचे नाव आवश्यक आहे.")
             else:
-                data["events"].append({
+                event = {
                     "id": uuid.uuid4().hex,
                     "title": title.strip(),
                     "date": ev_date.isoformat(),
                     "time": ev_time.strftime("%H:%M"),
                     "place": place.strip(),
                     "description": desc.strip(),
-                })
+                }
+                if event_image:
+                    ext = Path(event_image.name).suffix.lower()
+                    image_filename = f"{uuid.uuid4().hex}{ext}"
+                    (UPLOAD_DIR / image_filename).write_bytes(event_image.getbuffer())
+                    event["image"] = image_filename
+                data["events"].append(event)
                 save_data(data)
                 st.success("कार्यक्रम वेळापत्रकात जोडला गेला.")
 
@@ -612,8 +634,13 @@ def render_admin(data: dict) -> None:
             d = parse_event_date(e)
             label = f"{e.get('title', '')} — {fmt_date(d) if d else e.get('date', '')}"
             c1, c2 = st.columns([4, 1])
+            event_image = event_image_path(e)
+            if event_image and event_image.exists():
+                c1.image(str(event_image), width=180)
             c1.markdown(f"**{label}**")
             if c2.button("हटवा", key=f"del_ev_{e['id']}"):
+                if event_image and event_image.exists():
+                    event_image.unlink()
                 data["events"] = [x for x in data["events"] if x["id"] != e["id"]]
                 save_data(data)
                 st.rerun()
