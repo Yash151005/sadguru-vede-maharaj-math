@@ -277,6 +277,22 @@ def parse_event_date(e: dict) -> date | None:
         return None
 
 
+def event_schedule_text(event: dict) -> str:
+    start_date = parse_event_date(event)
+    if start_date is None:
+        return event.get("date", "")
+    schedule = fmt_date(start_date)
+    if event.get("time"):
+        schedule += f" • 🕒 {mr_digits(event['time'])}"
+
+    end_date = parse_event_date({"date": event.get("end_date")})
+    if end_date:
+        schedule += f" → {fmt_date(end_date)}"
+        if event.get("end_time"):
+            schedule += f" • 🕒 {mr_digits(event['end_time'])}"
+    return schedule
+
+
 def split_events(events: list[dict]) -> tuple[list[dict], list[dict]]:
     today = now_ist().date()
     upcoming, past = [], []
@@ -337,7 +353,7 @@ def render_home(data: dict) -> None:
             <div class="card card-gold">
                 <span class="badge">पुढील कार्यक्रम</span>
                 <h3>{html.escape(nxt.get('title', ''))}</h3>
-                <div>🗓️ {fmt_date(d)} {('• 🕒 ' + mr_digits(nxt['time'])) if nxt.get('time') else ''}</div>
+                <div>🗓️ {event_schedule_text(nxt)}</div>
                 <div>📍 {html.escape(nxt.get('place', '') or MATH_PLACE)}</div>
                 <div class="countdown">{countdown_text(d)}</div>
             </div>
@@ -466,7 +482,7 @@ def render_events(data: dict) -> None:
             <div class="card {'card-gold' if i == 0 else ''}">
                 {badge}
                 <h3>{html.escape(e.get('title', ''))}</h3>
-                <div>🗓️ <b>{fmt_date(d)}</b>{(' • 🕒 ' + mr_digits(e['time'])) if e.get('time') else ''}</div>
+                <div>🗓️ <b>{event_schedule_text(e)}</b></div>
                 <div>📍 {html.escape(e.get('place', '') or MATH_PLACE)}</div>
                 <p>{html.escape(e.get('description', ''))}</p>
                 <div class="countdown" style="font-size:1.1rem">{countdown_text(d)}</div>
@@ -480,8 +496,7 @@ def render_events(data: dict) -> None:
             for e in past:
                 d = parse_event_date(e)
                 st.markdown(
-                    f"- **{html.escape(e.get('title', ''))}** — {fmt_date(d)}"
-                    f"{(' • ' + mr_digits(e['time'])) if e.get('time') else ''}"
+                    f"- **{html.escape(e.get('title', ''))}** — {event_schedule_text(e)}"
                 )
 
 
@@ -597,6 +612,13 @@ def render_admin(data: dict) -> None:
             c1, c2 = st.columns(2)
             ev_date = c1.date_input("तारीख", value=now_ist().date())
             ev_time = c2.time_input("वेळ", value=time(8, 0))
+            has_end = st.checkbox("समाप्ती तारीख आणि वेळ (ऐच्छिक)")
+            end_date = None
+            end_time = None
+            if has_end:
+                end_c1, end_c2 = st.columns(2)
+                end_date = end_c1.date_input("समाप्ती तारीख", value=ev_date)
+                end_time = end_c2.time_input("समाप्ती वेळ", value=ev_time)
             place = st.text_input("ठिकाण", value=MATH_PLACE)
             desc = st.text_area("माहिती / विशेष सूचना")
             event_image = st.file_uploader(
@@ -608,6 +630,8 @@ def render_admin(data: dict) -> None:
         if sub:
             if not title.strip():
                 st.warning("कार्यक्रमाचे नाव आवश्यक आहे.")
+            elif has_end and datetime.combine(end_date, end_time) < datetime.combine(ev_date, ev_time):
+                st.warning("समाप्ती तारीख आणि वेळ सुरुवातीपेक्षा नंतरची असावी.")
             else:
                 event = {
                     "id": uuid.uuid4().hex,
@@ -617,6 +641,9 @@ def render_admin(data: dict) -> None:
                     "place": place.strip(),
                     "description": desc.strip(),
                 }
+                if has_end:
+                    event["end_date"] = end_date.isoformat()
+                    event["end_time"] = end_time.strftime("%H:%M")
                 if event_image:
                     ext = Path(event_image.name).suffix.lower()
                     image_filename = f"{uuid.uuid4().hex}{ext}"
@@ -632,7 +659,7 @@ def render_admin(data: dict) -> None:
             st.info("अद्याप कोणताही कार्यक्रम नाही.")
         for e in sorted(data["events"], key=lambda x: x.get("date", ""), reverse=True):
             d = parse_event_date(e)
-            label = f"{e.get('title', '')} — {fmt_date(d) if d else e.get('date', '')}"
+            label = f"{e.get('title', '')} — {event_schedule_text(e)}"
             c1, c2 = st.columns([4, 1])
             event_image = event_image_path(e)
             if event_image and event_image.exists():
