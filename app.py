@@ -32,7 +32,27 @@ DATA_FILE = APP_DIR / "data.json"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 # प्रशासक पासवर्ड फक्त environment variable मधून वाचला जातो (कोडमध्ये पासवर्ड नाही)
-# उदा. export MATH_ADMIN_PASSWORD="your-password"
+def load_dotenv() -> None:
+    env_file = APP_DIR / ".env"
+    if not env_file.exists():
+        return
+    for line_number, raw_line in enumerate(env_file.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise ValueError(f"Invalid .env entry on line {line_number}. Expected KEY=VALUE.")
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            raise ValueError(f"Invalid .env entry on line {line_number}. Missing key.")
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+
+load_dotenv()
 ADMIN_PASSWORD = os.environ.get("MATH_ADMIN_PASSWORD", "")
 
 MATH_NAME = "श्री. सद्गुरू यज्ञेश्वर शिवाचार्य (वेडे महाराज) मठ"
@@ -141,6 +161,12 @@ html, body, [class*="css"] {
     .contact-row { grid-template-columns: 1fr; }
 }
 .admin-title { color: #000 !important; }
+.stTabs [data-baseweb="tab"] {
+    color: #000 !important;
+}
+.stTabs [data-baseweb="tab"] p {
+    color: #000 !important;
+}
 .gallery-title,
 .events-title,
 .events-subtitle { color: #000 !important; }
